@@ -11,7 +11,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 app.post('/webhook/chat', async (req, res) => {
   try {
-    const { message, language, topic, icon } = req.body;
+    const { message, language, topic, icon, history = [] } = req.body;
 
     if (!message || message.trim() === '') {
       return res.status(400).json({ error: true, message: 'Message is required' });
@@ -50,8 +50,9 @@ NIGERIAN LAWS YOU KNOW:
       {
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message.trim() }
+            { role: 'system', content: systemPrompt },
+            ...history,
+             { role: 'user', content: message.trim() }
         ],
         max_tokens: 1024,
         temperature: 0.7
