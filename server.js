@@ -45,6 +45,8 @@ NIGERIAN LAWS YOU KNOW:
 - Consumer Protection Council Act
 - National Health Act 2014`;
 
+
+
     const groqResponse = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
@@ -101,4 +103,70 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`LexBot server running on port ${PORT}`);
+});
+
+app.post('/webhook/document', async (req, res) => {
+  try {
+    const { type, fields, formData, language } = req.body;
+
+    if (!type || !formData) {
+      return res.status(400).json({ error: true, message: 'Document type and form data are required' });
+    }
+
+    const langInstruction = language === 'PID'
+      ? 'Write the document in formal English (legal documents must be in English) but add a plain English summary at the end in Nigerian Pidgin.'
+      : 'Write the document in formal English.';
+
+    const systemPrompt = `You are LexBot, a Nigerian legal document generator. Generate professional, legally-structured Nigerian documents.
+
+IMPORTANT RULES:
+1. Generate complete, properly formatted legal documents
+2. Use Nigerian legal conventions and formatting
+3. Reference relevant Nigerian laws where appropriate
+4. Include all standard clauses for the document type
+5. Use the provided details to fill in the document
+6. ${langInstruction}
+7. End with: "NOTE: This document is for guidance only. Have it reviewed by a qualified Nigerian lawyer before use."
+
+Format the document with clear sections, proper headings, and professional language.`;
+
+    const userPrompt = `Generate a ${type} with these details:
+${Object.entries(formData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
+
+Generate a complete, professional Nigerian legal document.`;
+
+    const groqResponse = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 2048,
+        temperature: 0.3
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const document = groqResponse.data.choices[0].message.content;
+
+    return res.status(200).json({
+      document,
+      type,
+      generatedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Document error:', error.response?.data || error.message);
+    return res.status(500).json({
+      error: true,
+      message: 'Failed to generate document. Please try again.'
+    });
+  }
 });
