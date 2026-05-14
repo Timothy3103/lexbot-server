@@ -87,6 +87,13 @@ NIGERIAN LAWS YOU KNOW:
   }
 });
 
+// Keep-alive ping to prevent Render free tier sleep
+setInterval(() => {
+  fetch('https://lexbot-server.onrender.com/')
+    .then(() => console.log('Keep-alive ping sent'))
+    .catch(() => console.log('Keep-alive ping failed'));
+}, 14 * 60 * 1000);
+
 app.get('/', (req, res) => {
   res.json({ status: 'LexBot server is running' });
 });
