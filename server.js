@@ -11,7 +11,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 app.post('/webhook/chat', async (req, res) => {
   try {
-    const { message, language } = req.body;
+    const { message, language, topic, icon } = req.body;
 
     if (!message || message.trim() === '') {
       return res.status(400).json({ error: true, message: 'Message is required' });
@@ -22,6 +22,7 @@ app.post('/webhook/chat', async (req, res) => {
       : 'Respond in clear, simple English that non-lawyers can understand.';
 
     const systemPrompt = `You are LexBot, an AI legal assistant specialising in Nigerian law.
+${topic ? `The user is asking about: ${icon} ${topic}. Focus your responses on this area of Nigerian law.` : ''}
 
 IMPORTANT RULES:
 1. Only reference actual Nigerian laws and statutes
